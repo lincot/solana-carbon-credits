@@ -1,5 +1,5 @@
-use crate::state::*;
 use crate::ID;
+use crate::{state::*, utils::*};
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -28,7 +28,11 @@ pub struct MintCNFT<'info> {
     /// CHECK: only used in CPI
     #[account(mut)]
     authority_usdc: UncheckedAccount<'info>,
-    #[account(mut, token::authority = program_state.load()?.authority)]
+    #[account(
+        mut,
+        token::authority = program_state.load()?.authority,
+        token::mint = USDC_MINT,
+    )]
     platform_usdc: Account<'info, TokenAccount>,
     #[account(
         init,
