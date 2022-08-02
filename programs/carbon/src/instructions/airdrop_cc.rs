@@ -5,9 +5,7 @@ use solana_program::clock::SECONDS_PER_DAY;
 
 #[derive(Accounts)]
 pub struct AirdropCC<'info> {
-    /// CHECK:
-    #[account(seeds = [b"program_as_signer"], bump)]
-    program_as_signer: UncheckedAccount<'info>,
+    program_state: AccountLoader<'info, ProgramState>,
     #[account(
         constraint = cnft_account.amount == 1,
         constraint = cnft_account.owner == cc_account.owner,
@@ -19,7 +17,7 @@ pub struct AirdropCC<'info> {
         bump,
     )]
     cnft_data: AccountLoader<'info, CNFTData>,
-    /// CHECK:
+    /// CHECK: only used in CPI
     #[account(mut, seeds = [b"cc_reserve"], bump)]
     cc_reserve: UncheckedAccount<'info>,
     #[account(mut)]
@@ -40,12 +38,9 @@ pub fn airdrop_cc(ctx: Context<AirdropCC>) -> Result<()> {
             anchor_spl::token::Transfer {
                 from: ctx.accounts.cc_reserve.to_account_info(),
                 to: ctx.accounts.cc_account.to_account_info(),
-                authority: ctx.accounts.program_as_signer.to_account_info(),
+                authority: ctx.accounts.program_state.to_account_info(),
             },
-            &[&[
-                b"program_as_signer",
-                &[*ctx.bumps.get("program_as_signer").unwrap()],
-            ]],
+            &[&[b"program_state", &[ctx.accounts.program_state.load()?.bump]]],
         ),
         airdrops_amount as u64 * cnft_data.credits_per_year as u64 * 10u64.pow(CC_DECIMALS as u32),
     )?;

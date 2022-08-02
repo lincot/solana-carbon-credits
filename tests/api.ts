@@ -6,7 +6,7 @@ import {
   PublicKey,
   TransactionSignature,
 } from "@solana/web3.js";
-import { CNFTTier, Context, USDC_MINT } from "./ctx";
+import { CNFTTier, Context } from "./ctx";
 import { PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import {
   findAssociatedTokenAccountPda,
@@ -19,6 +19,24 @@ import {
 } from "@solana/spl-token";
 import { findProgramAddressSync } from "@project-serum/anchor/dist/cjs/utils/pubkey";
 import { findOrCreateATA } from "./token";
+import { USDC_MINT } from "./utils";
+
+export async function initialize(ctx: Context): Promise<TransactionSignature> {
+  return await ctx.program.methods
+    .initialize()
+    .accounts({
+      programState: ctx.programState,
+      authority: ctx.authority.publicKey,
+      ccMint: ctx.ccMint,
+      ccReserve: ctx.ccReserve,
+      whitelistMint: ctx.whitelistMint,
+      rent: SYSVAR_RENT_PUBKEY,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    })
+    .signers([ctx.authority])
+    .rpc();
+}
 
 export function findTierCollectionMint(
   ctx: Context,
@@ -56,8 +74,8 @@ export async function createTierCollection(
   return await ctx.program.methods
     .createTierCollection(tier, metadataUri)
     .accounts({
-      programAsSigner: ctx.programAsSigner,
-      tokenAccount: findAssociatedTokenAccountPda(mint, ctx.programAsSigner),
+      programState: ctx.programState,
+      tokenAccount: findAssociatedTokenAccountPda(mint, ctx.programState),
       authority: ctx.authority.publicKey,
       metadata: findMetadataPda(mint),
       mint,
@@ -72,19 +90,20 @@ export async function createTierCollection(
     .rpc();
 }
 
-export async function createCC(ctx: Context): Promise<TransactionSignature> {
+export async function whitelist(
+  ctx: Context,
+  user: PublicKey
+): Promise<TransactionSignature> {
   return await ctx.program.methods
-    .createCc()
+    .whitelist()
     .accounts({
-      programAsSigner: ctx.programAsSigner,
-      payer: ctx.payer.publicKey,
-      ccMint: ctx.ccMint,
-      ccReserve: ctx.ccReserve,
-      rent: SYSVAR_RENT_PUBKEY,
+      programState: ctx.programState,
+      authority: ctx.authority.publicKey,
+      whitelistMint: ctx.whitelistMint,
+      tokenAccount: await findOrCreateATA(ctx, ctx.whitelistMint, user),
       tokenProgram: TOKEN_PROGRAM_ID,
-      systemProgram: SystemProgram.programId,
     })
-    .signers([ctx.payer])
+    .signers([ctx.authority])
     .rpc();
 }
 
@@ -103,7 +122,7 @@ export async function mintCNFT(
     transactionSignature: await ctx.program.methods
       .mintCnft(tier)
       .accounts({
-        programAsSigner: ctx.programAsSigner,
+        programState: ctx.programState,
         authority: authority.publicKey,
         authorityWhitelist: await findOrCreateATA(
           ctx,
@@ -151,7 +170,7 @@ export async function mintCC(
   return await ctx.program.methods
     .mintCc(new BN(amount), registryBatchUri)
     .accounts({
-      programAsSigner: ctx.programAsSigner,
+      programState: ctx.programState,
       authority: ctx.authority.publicKey,
       ccMint: ctx.ccMint,
       ccReserve: ctx.ccReserve,
@@ -169,7 +188,7 @@ export async function airdropCC(
   return await ctx.program.methods
     .airdropCc()
     .accounts({
-      programAsSigner: ctx.programAsSigner,
+      programState: ctx.programState,
       cnftAccount: await findOrCreateATA(ctx, cnftMint, authority),
       cnftData: findCNFTData(ctx, cnftMint),
       ccReserve: ctx.ccReserve,

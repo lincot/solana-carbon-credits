@@ -4,10 +4,11 @@ import { Context } from "./ctx";
 import {
   airdropCC,
   burnCC,
-  createCC,
+  initialize,
   createTierCollection,
   mintCC,
   mintCNFT,
+  whitelist,
 } from "./api";
 import { PublicKey } from "@solana/web3.js";
 
@@ -20,6 +21,10 @@ before(async () => {
 });
 
 describe("Carbon", () => {
+  it("Initialize", async () => {
+    await initialize(ctx);
+  });
+
   it("CreateTierEdition", async () => {
     await createTierCollection(ctx, { platinum: {} }, "");
     await createTierCollection(ctx, { gold: {} }, "");
@@ -27,8 +32,8 @@ describe("Carbon", () => {
     await createTierCollection(ctx, { bronze: {} }, "");
   });
 
-  it("CreateCC", async () => {
-    await createCC(ctx);
+  it("Whitelist", async () => {
+    await whitelist(ctx, ctx.user.publicKey);
   });
 
   let cnftMint: PublicKey;

@@ -10,6 +10,10 @@ declare_id!("FLihr2MTD514e7hSHXAs2vu9t9i4KszsZ6SNz8jK6q1g");
 pub mod carbon {
     use super::*;
 
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        instructions::initialize(ctx)
+    }
+
     pub fn create_tier_collection(
         ctx: Context<CreateTierCollection>,
         tier: CNFTTier,
@@ -18,8 +22,8 @@ pub mod carbon {
         instructions::create_tier_collection(ctx, tier, metadata_uri)
     }
 
-    pub fn create_cc(ctx: Context<CreateCC>) -> Result<()> {
-        instructions::create_cc(ctx)
+    pub fn whitelist(ctx: Context<Whitelist>) -> Result<()> {
+        instructions::whitelist(ctx)
     }
 
     pub fn mint_cnft(ctx: Context<MintCNFT>, tier: CNFTTier) -> Result<()> {

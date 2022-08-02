@@ -4,13 +4,9 @@ import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 import { findProgramAddressSync } from "@project-serum/anchor/dist/cjs/utils/pubkey";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { Carbon } from "../target/types/carbon";
-import { airdrop } from "./utils";
+import { airdrop, USDC_MINT } from "./utils";
 import * as token from "@solana/spl-token";
 import { findOrCreateATA } from "./token";
-
-export const USDC_MINT = new PublicKey(
-  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
-);
 
 export type CNFTTier =
   | { platinum: {} }
@@ -27,7 +23,7 @@ export class Context {
 
   user: Keypair;
 
-  programAsSigner: PublicKey;
+  programState: PublicKey;
   ccMint: PublicKey;
   ccReserve: PublicKey;
 
@@ -44,8 +40,8 @@ export class Context {
     this.authority = new Keypair();
     this.user = new Keypair();
 
-    this.programAsSigner = findProgramAddressSync(
-      [Buffer.from("program_as_signer")],
+    this.programState = findProgramAddressSync(
+      [Buffer.from("program_state")],
       this.program.programId
     )[0];
     this.ccMint = findProgramAddressSync(
@@ -54,6 +50,10 @@ export class Context {
     )[0];
     this.ccReserve = findProgramAddressSync(
       [Buffer.from("cc_reserve")],
+      this.program.programId
+    )[0];
+    this.whitelistMint = findProgramAddressSync(
+      [Buffer.from("whitelist_mint")],
       this.program.programId
     )[0];
   }
@@ -68,22 +68,6 @@ export class Context {
       await findOrCreateATA(this, USDC_MINT, this.user.publicKey),
       this.payer,
       1_000_000
-    );
-
-    this.whitelistMint = await token.createMint(
-      this.provider.connection,
-      this.payer,
-      this.payer.publicKey,
-      this.payer.publicKey,
-      0
-    );
-    await token.mintTo(
-      this.provider.connection,
-      this.payer,
-      this.whitelistMint,
-      await findOrCreateATA(this, this.whitelistMint, this.user.publicKey),
-      this.payer,
-      1
     );
   }
 }

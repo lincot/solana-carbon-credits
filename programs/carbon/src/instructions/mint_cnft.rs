@@ -1,4 +1,5 @@
 use crate::state::*;
+use crate::ID;
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -14,24 +15,21 @@ use solana_program::program::invoke_signed;
 #[instruction(tier: CNFTTier)]
 pub struct MintCNFT<'info> {
     // TODO: remove mut when they fix unnecessary isMut
-    /// CHECK:
-    #[account(mut, seeds = [b"program_as_signer"], bump)]
-    program_as_signer: UncheckedAccount<'info>,
+    #[account(mut)]
+    program_state: AccountLoader<'info, ProgramState>,
     #[account(mut)]
     authority: Signer<'info>,
-    // TODO: check mint
     #[account(
         token::authority = authority,
+        token::mint = Pubkey::find_program_address(&[b"whitelist_mint"], &ID).0,
         constraint = authority_whitelist.amount != 0,
     )]
-    authority_whitelist: Account<'info, TokenAccount>,
+    authority_whitelist: Box<Account<'info, TokenAccount>>,
     /// CHECK: only used in CPI
     #[account(mut)]
     authority_usdc: UncheckedAccount<'info>,
-    // TODO: check address
-    /// CHECK: only used in CPI
-    #[account(mut)]
-    platform_usdc: UncheckedAccount<'info>,
+    #[account(mut, token::authority = program_state.load()?.authority)]
+    platform_usdc: Account<'info, TokenAccount>,
     #[account(
         init,
         payer = authority,
@@ -102,6 +100,9 @@ pub fn mint_cnft(ctx: Context<MintCNFT>, tier: CNFTTier) -> Result<()> {
         1,
     )?;
 
+    let signers_seeds: &[&[&[u8]]] =
+        &[&[b"program_state", &[ctx.accounts.program_state.load()?.bump]]];
+
     invoke_signed(
         &create_metadata_accounts_v2(
             ctx.accounts.token_metadata_program.key(),
@@ -109,11 +110,10 @@ pub fn mint_cnft(ctx: Context<MintCNFT>, tier: CNFTTier) -> Result<()> {
             ctx.accounts.mint.key(),
             ctx.accounts.authority.key(),
             ctx.accounts.authority.key(),
-            ctx.accounts.program_as_signer.key(),
+            ctx.accounts.program_state.key(),
             format!("{:?} Carbon NFT", tier),
             format!("{:?}", tier),
-            // TODO: use hosted metadata
-            "".into(),
+            tier.metadata_uri().into(),
             None,
             1,
             true,
@@ -129,14 +129,11 @@ pub fn mint_cnft(ctx: Context<MintCNFT>, tier: CNFTTier) -> Result<()> {
             ctx.accounts.mint.to_account_info(),
             ctx.accounts.authority.to_account_info(),
             ctx.accounts.authority.to_account_info(),
-            ctx.accounts.program_as_signer.to_account_info(),
+            ctx.accounts.program_state.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
             ctx.accounts.rent.to_account_info(),
         ],
-        &[&[
-            b"program_as_signer",
-            &[*ctx.bumps.get("program_as_signer").unwrap()],
-        ]],
+        signers_seeds,
     )?;
 
     invoke_signed(
@@ -144,7 +141,7 @@ pub fn mint_cnft(ctx: Context<MintCNFT>, tier: CNFTTier) -> Result<()> {
             ctx.accounts.token_metadata_program.key(),
             ctx.accounts.edition.key(),
             ctx.accounts.mint.key(),
-            ctx.accounts.program_as_signer.key(),
+            ctx.accounts.program_state.key(),
             ctx.accounts.authority.key(),
             ctx.accounts.metadata.key(),
             ctx.accounts.authority.key(),
@@ -153,7 +150,7 @@ pub fn mint_cnft(ctx: Context<MintCNFT>, tier: CNFTTier) -> Result<()> {
         &[
             ctx.accounts.edition.to_account_info(),
             ctx.accounts.mint.to_account_info(),
-            ctx.accounts.program_as_signer.to_account_info(),
+            ctx.accounts.program_state.to_account_info(),
             ctx.accounts.authority.to_account_info(),
             ctx.accounts.authority.to_account_info(),
             ctx.accounts.metadata.to_account_info(),
@@ -161,17 +158,14 @@ pub fn mint_cnft(ctx: Context<MintCNFT>, tier: CNFTTier) -> Result<()> {
             ctx.accounts.system_program.to_account_info(),
             ctx.accounts.rent.to_account_info(),
         ],
-        &[&[
-            b"program_as_signer",
-            &[*ctx.bumps.get("program_as_signer").unwrap()],
-        ]],
+        signers_seeds,
     )?;
 
     invoke_signed(
         &verify_collection(
             ctx.accounts.token_metadata_program.key(),
             ctx.accounts.metadata.key(),
-            ctx.accounts.program_as_signer.key(),
+            ctx.accounts.program_state.key(),
             ctx.accounts.authority.key(),
             ctx.accounts.collection_mint.key(),
             ctx.accounts.collection_metadata.key(),
@@ -180,16 +174,13 @@ pub fn mint_cnft(ctx: Context<MintCNFT>, tier: CNFTTier) -> Result<()> {
         ),
         &[
             ctx.accounts.metadata.to_account_info(),
-            ctx.accounts.program_as_signer.to_account_info(),
+            ctx.accounts.program_state.to_account_info(),
             ctx.accounts.authority.to_account_info(),
             ctx.accounts.collection_mint.to_account_info(),
             ctx.accounts.collection_metadata.to_account_info(),
             ctx.accounts.collection_edition.to_account_info(),
         ],
-        &[&[
-            b"program_as_signer",
-            &[*ctx.bumps.get("program_as_signer").unwrap()],
-        ]],
+        signers_seeds,
     )?;
 
     let cnft_data = &mut ctx.accounts.cnft_data.load_init()?;

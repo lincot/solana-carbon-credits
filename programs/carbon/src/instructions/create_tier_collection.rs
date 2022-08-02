@@ -10,11 +10,8 @@ use solana_program::program::invoke_signed;
 #[derive(Accounts)]
 #[instruction(tier: CNFTTier)]
 pub struct CreateTierCollection<'info> {
-    /// CHECK:
-    #[account(init_if_needed, payer = authority, space = 0, seeds = [b"program_as_signer"], bump)]
-    program_as_signer: UncheckedAccount<'info>,
-    // TODO: check address
-    #[account(mut)]
+    program_state: AccountLoader<'info, ProgramState>,
+    #[account(mut, address = program_state.load()?.authority)]
     authority: Signer<'info>,
     /// CHECK: only used in CPI
     #[account(mut)]
@@ -32,7 +29,7 @@ pub struct CreateTierCollection<'info> {
         init,
         payer = authority,
         associated_token::mint = mint,
-        associated_token::authority = program_as_signer,
+        associated_token::authority = program_state,
     )]
     token_account: Account<'info, TokenAccount>,
     /// CHECK: only used in CPI
@@ -72,7 +69,7 @@ pub fn create_tier_collection(
             ctx.accounts.mint.key(),
             ctx.accounts.authority.key(),
             ctx.accounts.authority.key(),
-            ctx.accounts.program_as_signer.key(),
+            ctx.accounts.program_state.key(),
             format!("{:?} Carbon NFT Collection", tier),
             format!("{:?}", tier),
             metadata_uri,
@@ -88,14 +85,11 @@ pub fn create_tier_collection(
             ctx.accounts.mint.to_account_info(),
             ctx.accounts.authority.to_account_info(),
             ctx.accounts.authority.to_account_info(),
-            ctx.accounts.program_as_signer.to_account_info(),
+            ctx.accounts.program_state.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
             ctx.accounts.rent.to_account_info(),
         ],
-        &[&[
-            b"program_as_signer",
-            &[*ctx.bumps.get("program_as_signer").unwrap()],
-        ]],
+        &[&[b"program_state", &[ctx.accounts.program_state.load()?.bump]]],
     )?;
 
     invoke_signed(
@@ -103,7 +97,7 @@ pub fn create_tier_collection(
             ctx.accounts.token_metadata_program.key(),
             ctx.accounts.edition.key(),
             ctx.accounts.mint.key(),
-            ctx.accounts.program_as_signer.key(),
+            ctx.accounts.program_state.key(),
             ctx.accounts.authority.key(),
             ctx.accounts.metadata.key(),
             ctx.accounts.authority.key(),
@@ -112,7 +106,7 @@ pub fn create_tier_collection(
         &[
             ctx.accounts.edition.to_account_info(),
             ctx.accounts.mint.to_account_info(),
-            ctx.accounts.program_as_signer.to_account_info(),
+            ctx.accounts.program_state.to_account_info(),
             ctx.accounts.authority.to_account_info(),
             ctx.accounts.authority.to_account_info(),
             ctx.accounts.metadata.to_account_info(),
@@ -120,10 +114,7 @@ pub fn create_tier_collection(
             ctx.accounts.system_program.to_account_info(),
             ctx.accounts.rent.to_account_info(),
         ],
-        &[&[
-            b"program_as_signer",
-            &[*ctx.bumps.get("program_as_signer").unwrap()],
-        ]],
+        &[&[b"program_state", &[ctx.accounts.program_state.load()?.bump]]],
     )?;
 
     Ok(())
