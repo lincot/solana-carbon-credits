@@ -1,3 +1,4 @@
+use crate::state::*;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount};
 
@@ -22,7 +23,7 @@ pub fn burn_cc(ctx: Context<BurnCC>, amount: u64) -> Result<()> {
                 authority: ctx.accounts.authority.to_account_info(),
             },
         ),
-        amount,
+        amount * 10u64.pow(CC_DECIMALS as u32),
     )?;
 
     emit!(BurnCCEvent {

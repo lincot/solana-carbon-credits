@@ -7,8 +7,9 @@ import { Carbon } from "../target/types/carbon";
 import { airdrop, USDC_MINT } from "./utils";
 import * as token from "@solana/spl-token";
 import { findOrCreateATA } from "./token";
+import { Metaplex } from "@metaplex-foundation/js";
 
-export type CNFTTier =
+export type CnftTier =
   | { platinum: {} }
   | { gold: {} }
   | { silver: {} }
@@ -19,9 +20,14 @@ export class Context {
 
   program: Program<Carbon>;
 
+  metaplex: Metaplex;
+
+  payer: Keypair;
+
   authority: Keypair;
 
-  user: Keypair;
+  user1: Keypair;
+  user2: Keypair;
 
   programState: PublicKey;
   ccMint: PublicKey;
@@ -29,16 +35,20 @@ export class Context {
 
   whitelistMint: PublicKey;
 
-  payer: Keypair;
+  ccDecimals: number;
 
   constructor() {
     this.provider = anchor.AnchorProvider.env();
     anchor.setProvider(this.provider);
     this.program = anchor.workspace.Carbon;
+    this.metaplex = new Metaplex(this.provider.connection, {
+      cluster: "localnet",
+    });
     this.payer = (this.provider.wallet as NodeWallet).payer;
 
     this.authority = new Keypair();
-    this.user = new Keypair();
+    this.user1 = new Keypair();
+    this.user2 = new Keypair();
 
     this.programState = findProgramAddressSync(
       [Buffer.from("program_state")],
@@ -56,18 +66,36 @@ export class Context {
       [Buffer.from("whitelist_mint")],
       this.program.programId
     )[0];
+
+    this.ccDecimals = Number(findConstant(this, "CC_DECIMALS"));
   }
 
   async setup(): Promise<void> {
-    await airdrop(this, [this.authority.publicKey, this.user.publicKey]);
+    await airdrop(this, [
+      this.authority.publicKey,
+      this.user1.publicKey,
+      this.user2.publicKey,
+    ]);
 
     await token.mintTo(
       this.provider.connection,
       this.payer,
       USDC_MINT,
-      await findOrCreateATA(this, USDC_MINT, this.user.publicKey),
+      await findOrCreateATA(this, USDC_MINT, this.user1.publicKey),
+      this.payer,
+      1_000_000
+    );
+    await token.mintTo(
+      this.provider.connection,
+      this.payer,
+      USDC_MINT,
+      await findOrCreateATA(this, USDC_MINT, this.user2.publicKey),
       this.payer,
       1_000_000
     );
   }
+}
+
+function findConstant(ctx: Context, name: string): string {
+  return ctx.program.idl.constants.find((c) => c.name == name).value;
 }

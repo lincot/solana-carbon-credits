@@ -17,17 +17,16 @@ pub mod carbon {
 
     pub fn create_tier_collection(
         ctx: Context<CreateTierCollection>,
-        tier: CNFTTier,
-        metadata_uri: String,
+        tier: CnftTier,
     ) -> Result<()> {
-        instructions::create_tier_collection(ctx, tier, metadata_uri)
+        instructions::create_tier_collection(ctx, tier)
     }
 
     pub fn whitelist(ctx: Context<Whitelist>) -> Result<()> {
         instructions::whitelist(ctx)
     }
 
-    pub fn mint_cnft(ctx: Context<MintCNFT>, tier: CNFTTier) -> Result<()> {
+    pub fn mint_cnft(ctx: Context<MintCnft>, tier: CnftTier) -> Result<()> {
         instructions::mint_cnft(ctx, tier)
     }
 

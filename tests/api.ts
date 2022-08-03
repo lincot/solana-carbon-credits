@@ -6,7 +6,7 @@ import {
   PublicKey,
   TransactionSignature,
 } from "@solana/web3.js";
-import { CNFTTier, Context } from "./ctx";
+import { CnftTier, Context } from "./ctx";
 import { PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import {
   findAssociatedTokenAccountPda,
@@ -40,7 +40,7 @@ export async function initialize(ctx: Context): Promise<TransactionSignature> {
 
 export function findTierCollectionMint(
   ctx: Context,
-  tier: CNFTTier
+  tier: CnftTier
 ): PublicKey {
   let tierAsNumber = 0;
   if (tier.hasOwnProperty("gold")) {
@@ -57,7 +57,7 @@ export function findTierCollectionMint(
   )[0];
 }
 
-export function findCNFTData(ctx: Context, mint: PublicKey): PublicKey {
+export function findCnftData(ctx: Context, mint: PublicKey): PublicKey {
   return findProgramAddressSync(
     [Buffer.from("cnft_data"), mint.toBuffer()],
     ctx.program.programId
@@ -66,13 +66,12 @@ export function findCNFTData(ctx: Context, mint: PublicKey): PublicKey {
 
 export async function createTierCollection(
   ctx: Context,
-  tier: CNFTTier,
-  metadataUri: string
+  tier: CnftTier
 ): Promise<TransactionSignature> {
   const mint = findTierCollectionMint(ctx, tier);
 
   return await ctx.program.methods
-    .createTierCollection(tier, metadataUri)
+    .createTierCollection(tier)
     .accounts({
       programState: ctx.programState,
       tokenAccount: findAssociatedTokenAccountPda(mint, ctx.programState),
@@ -107,10 +106,10 @@ export async function whitelist(
     .rpc();
 }
 
-export async function mintCNFT(
+export async function mintCnft(
   ctx: Context,
   authority: Keypair,
-  tier: CNFTTier
+  tier: CnftTier
 ): Promise<{
   transactionSignature: TransactionSignature;
   cnftMint: PublicKey;
@@ -149,7 +148,7 @@ export async function mintCNFT(
         collectionMint,
         collectionMetadata: findMetadataPda(collectionMint),
         collectionEdition: findMasterEditionV2Pda(collectionMint),
-        cnftData: findCNFTData(ctx, mint.publicKey),
+        cnftData: findCnftData(ctx, mint.publicKey),
         rent: SYSVAR_RENT_PUBKEY,
         tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
         tokenProgram: TOKEN_PROGRAM_ID,
@@ -190,7 +189,7 @@ export async function airdropCC(
     .accounts({
       programState: ctx.programState,
       cnftAccount: await findOrCreateATA(ctx, cnftMint, authority),
-      cnftData: findCNFTData(ctx, cnftMint),
+      cnftData: findCnftData(ctx, cnftMint),
       ccReserve: ctx.ccReserve,
       ccAccount: await findOrCreateATA(ctx, ctx.ccMint, authority),
       tokenProgram: TOKEN_PROGRAM_ID,

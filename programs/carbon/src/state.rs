@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 
+#[constant]
 pub const CC_DECIMALS: u8 = 9;
 
 #[account(zero_copy)]
@@ -10,13 +11,14 @@ pub struct ProgramState {
 }
 
 #[derive(Copy, Clone, AnchorDeserialize, AnchorSerialize, Debug)]
-pub enum CNFTTier {
+pub enum CnftTier {
     Platinum,
     Gold,
     Silver,
     Bronze,
 }
-impl CNFTTier {
+
+impl CnftTier {
     pub const fn price(&self) -> u64 {
         match self {
             Self::Platinum => 20000,
@@ -38,17 +40,27 @@ impl CNFTTier {
     pub const fn metadata_uri(&self) -> &'static str {
         // TODO: use real hosted metadata
         match self {
-            Self::Platinum => "arweave.net/a",
-            Self::Gold => "arweave.net/b",
-            Self::Silver => "arweave.net/c",
-            Self::Bronze => "arweave.net/d",
+            Self::Platinum => "https://arweave.net/a",
+            Self::Gold => "https://arweave.net/b",
+            Self::Silver => "https://arweave.net/c",
+            Self::Bronze => "https://arweave.net/d",
+        }
+    }
+
+    pub const fn collection_metadata_uri(&self) -> &'static str {
+        // TODO: use real hosted metadata
+        match self {
+            Self::Platinum => "https://arweave.net/a",
+            Self::Gold => "https://arweave.net/b",
+            Self::Silver => "https://arweave.net/c",
+            Self::Bronze => "https://arweave.net/d",
         }
     }
 }
 
 #[account(zero_copy)]
 #[repr(packed)]
-pub struct CNFTData {
+pub struct CnftData {
     pub creation_timestamp: u32,
     pub credits_per_year: u16,
     pub airdrops_claimed: u8,

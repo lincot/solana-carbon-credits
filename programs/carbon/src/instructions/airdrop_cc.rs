@@ -16,7 +16,7 @@ pub struct AirdropCC<'info> {
         seeds = [b"cnft_data", cnft_account.mint.as_ref()],
         bump,
     )]
-    cnft_data: AccountLoader<'info, CNFTData>,
+    cnft_data: AccountLoader<'info, CnftData>,
     /// CHECK: only used in CPI
     #[account(mut, seeds = [b"cc_reserve"], bump)]
     cc_reserve: UncheckedAccount<'info>,

@@ -12,8 +12,8 @@ use mpl_token_metadata::{
 use solana_program::program::invoke_signed;
 
 #[derive(Accounts)]
-#[instruction(tier: CNFTTier)]
-pub struct MintCNFT<'info> {
+#[instruction(tier: CnftTier)]
+pub struct MintCnft<'info> {
     // TODO: remove mut when they fix unnecessary isMut
     #[account(mut)]
     program_state: AccountLoader<'info, ProgramState>,
@@ -64,11 +64,11 @@ pub struct MintCNFT<'info> {
     #[account(
         init,
         payer = authority,
-        space = 8 + std::mem::size_of::<CNFTData>(),
+        space = 8 + std::mem::size_of::<CnftData>(),
         seeds = [b"cnft_data", mint.key().as_ref()],
         bump,
     )]
-    cnft_data: AccountLoader<'info, CNFTData>,
+    cnft_data: AccountLoader<'info, CnftData>,
     /// CHECK: only used in CPI
     rent: UncheckedAccount<'info>,
     /// CHECK:
@@ -79,7 +79,7 @@ pub struct MintCNFT<'info> {
     system_program: Program<'info, System>,
 }
 
-pub fn mint_cnft(ctx: Context<MintCNFT>, tier: CNFTTier) -> Result<()> {
+pub fn mint_cnft(ctx: Context<MintCnft>, tier: CnftTier) -> Result<()> {
     token::transfer(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -119,7 +119,7 @@ pub fn mint_cnft(ctx: Context<MintCNFT>, tier: CNFTTier) -> Result<()> {
             format!("{:?}", tier),
             tier.metadata_uri().into(),
             None,
-            1,
+            0,
             true,
             false,
             Some(Collection {

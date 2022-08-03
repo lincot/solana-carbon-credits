@@ -8,7 +8,7 @@ use mpl_token_metadata::instruction::{create_master_edition_v3, create_metadata_
 use solana_program::program::invoke_signed;
 
 #[derive(Accounts)]
-#[instruction(tier: CNFTTier)]
+#[instruction(tier: CnftTier)]
 pub struct CreateTierCollection<'info> {
     program_state: AccountLoader<'info, ProgramState>,
     #[account(mut, address = program_state.load()?.authority)]
@@ -45,11 +45,7 @@ pub struct CreateTierCollection<'info> {
     system_program: Program<'info, System>,
 }
 
-pub fn create_tier_collection(
-    ctx: Context<CreateTierCollection>,
-    tier: CNFTTier,
-    metadata_uri: String,
-) -> Result<()> {
+pub fn create_tier_collection(ctx: Context<CreateTierCollection>, tier: CnftTier) -> Result<()> {
     token::mint_to(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -72,9 +68,9 @@ pub fn create_tier_collection(
             ctx.accounts.program_state.key(),
             format!("{:?} Carbon NFT Collection", tier),
             format!("{:?}", tier),
-            metadata_uri,
+            tier.collection_metadata_uri().into(),
             None,
-            1,
+            0,
             true,
             false,
             None,
