@@ -21,4 +21,5 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+dump = "yarn run ts-node scripts/dump.ts"
+test = "yarn run ts-mocha -p ./tsconfig.json --no-timeouts -s 0 tests/**/*.ts"
